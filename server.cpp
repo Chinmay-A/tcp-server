@@ -87,6 +87,7 @@ int main()
 
     do{
         incomingRes=recv(client,incoming_buffer,incomingBufferLen,0);
+        printf("Message Received: %s\n",incoming_buffer);
 
         if(incomingRes>0){
             outgoingRes=send(client,incoming_buffer,incomingRes,0);
