@@ -31,7 +31,7 @@ bool setup_address(sockaddr_in &curr_addr, int port)
 int main()
 {
 
-    cout << "Attempting to start server..." << endl;
+    cout << "Firing the server..." << endl;
 
     if (!initialize())
     {
