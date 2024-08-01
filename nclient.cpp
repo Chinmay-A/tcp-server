@@ -6,7 +6,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <tchar.h>
-#include "helper.cpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -80,7 +79,7 @@ int main()
 
     cout << "Connected to host at: " << "127.0.0.1:" << DESTPORT << endl;
 
-    string handshake_text = "This is client at IP localhost port: " + to_string(DESTPORT);
+    string handshake_text = "f22x";
 
     char buffer[handshake_text.length()];
 
@@ -94,6 +93,20 @@ int main()
         closesocket(client);
         WSACleanup();
         return 1;
+    }
+
+    char recv_buffer[31];
+
+    int bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
+
+    if (bytes_recv > 0)
+    {
+        cout << "Message Received from Server (" << bytes_recv << " Bytes) : " << recv_buffer << endl;
+    }
+
+    while (1)
+    {
+        cout << "bakchod" << endl;
     }
 
     WSACleanup();
