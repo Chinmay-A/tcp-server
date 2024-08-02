@@ -15,7 +15,7 @@ void fill_buffer_a(string s, char *curr_buff)
     return;
 }
 
-char *get_from_txt(string a, int verbose = 0)
+string get_from_txt(string a, int verbose = 0)
 {
     string file_contents = "";
 
@@ -33,13 +33,7 @@ char *get_from_txt(string a, int verbose = 0)
         cout << file_contents << endl;
     }
 
-    int file_size = file_contents.length();
-
-    char *arr = new char[file_size];
-
-    fill_buffer_a(file_contents, arr);
-
-    return arr;
+    return file_contents;
 }
 
 string write_to_txt(string contents, string identifier)

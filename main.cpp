@@ -12,6 +12,8 @@
 #include "helper.cpp"
 #include "filehandler.cpp"
 
+#include <sys/stat.h>
+
 #pragma comment(lib, "Ws2_32.lib")
 
 using namespace std;
@@ -116,6 +118,30 @@ void handle_handshake(SOCKET client)
     return;
 }
 
+void fetch_resource(SOCKET client, string message)
+{
+    int n = message.length();
+
+    string file_name_str = message.substr(1, n - 1);
+
+    string file_path = "./resources/" + file_name_str + ".txt";
+
+    string resource = get_from_txt(file_path);
+    char send_resource[resource.length()];
+    fill_buffer(resource, send_resource);
+
+    int bytes_sent = send(client, send_resource, sizeof(send_resource), 0);
+
+    if (bytes_sent < 0)
+    {
+        cout << "Failed to fetch resource, the client must retry" << endl;
+        return;
+    }
+
+    cout << "Size of Resource: " << sizeof(resource) << "Sent " << bytes_sent << " Bytes" << endl;
+    return;
+}
+
 void handle_client(SOCKET client, int &i, queue<string> &q, map<string, int> &m, int &active)
 {
     cout << "New connection established, active connections: " << i << endl;
@@ -140,6 +166,10 @@ void handle_client(SOCKET client, int &i, queue<string> &q, map<string, int> &m,
     else if (message_recvd[0] == 'm')
     {
         add_resource(client, message_recvd, m);
+    }
+    else if (message_recvd[0] == 'r')
+    {
+        fetch_resource(client, message_recvd);
     }
     else if (message_recvd[0] == 'q')
     {

@@ -54,7 +54,7 @@ int main()
 
     cout << "Connected to host at: " << "127.0.0.1:" << DESTPORT << endl;
 
-    string handshake_text = "q1xf0e";
+    string handshake_text = "rtestfile";
 
     char buffer[handshake_text.length()];
 
@@ -72,19 +72,19 @@ int main()
 
     cout << "Bytes Sent: " << bytes_sent << endl;
 
-    // char recv_buffer[31];
+    char recv_buffer[1024];
 
-    // int bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
+    int bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
 
-    // if (bytes_recv > 0)
-    // {
-    //     cout << "Message Received from Server (" << bytes_recv << " Bytes) : " << recv_buffer << endl;
-    // }
+    if (bytes_recv > 0)
+    {
+        cout << "Message Received from Server (" << bytes_recv << " Bytes) : " << recv_buffer << endl;
+    }
 
-    // while (1)
-    // {
-    //     bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
-    // }
+    while (1)
+    {
+        bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
+    }
 
     WSACleanup();
     return 0;
