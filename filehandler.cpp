@@ -38,7 +38,7 @@ string get_from_txt(string a, int verbose = 0)
 
 string write_to_txt(string contents, string identifier)
 {
-    string final_name = "/resources/" + identifier + ".txt";
+    string final_name = "./resources/" + identifier + ".txt";
     ofstream new_file(final_name);
 
     new_file << contents;

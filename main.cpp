@@ -40,10 +40,12 @@ void send_ok_handshake(SOCKET &client)
     return;
 }
 
-void handle_with_identifier(SOCKET client, string message, map<string, int> m)
+void handle_with_identifier(SOCKET client, string message, map<string, int> &m)
 {
     int n = message.length();
     string identifier = message.substr(1, n - 1);
+
+    cout << "In identifier with identifier size: " << n - 1 << endl;
 
     if (n - 1 != 3)
     {
@@ -84,7 +86,7 @@ void send_error(SOCKET client)
     return;
 }
 
-void add_resource(SOCKET client, string message, map<string, int> m)
+void add_resource(SOCKET client, string message, map<string, int> &m)
 {
     int n = message.length();
 
@@ -159,6 +161,8 @@ void handle_client(SOCKET client, int &i, queue<string> &q, map<string, int> &m,
 
     string message_recvd(recbuff, bytes_recvd);
 
+    cout << "Message from Client: " << message_recvd << endl;
+
     if (message_recvd[0] == 'i')
     {
         handle_with_identifier(client, message_recvd, m);
@@ -169,11 +173,12 @@ void handle_client(SOCKET client, int &i, queue<string> &q, map<string, int> &m,
     }
     else if (message_recvd[0] == 'r')
     {
+        cout << "Received Message: " << message_recvd << endl;
         fetch_resource(client, message_recvd);
     }
     else if (message_recvd[0] == 'q')
     {
-
+        cout << "Received Message: " << message_recvd << endl;
         // signal for server to quit: q1xf0e
         if (bytes_recvd = 6 && message_recvd[1] == '1' && message_recvd[2] == 'x' && message_recvd[3] == 'f' && message_recvd[4] == '0' && message_recvd[5] == 'e')
         {

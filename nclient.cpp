@@ -13,7 +13,7 @@
 
 using namespace std;
 
-int main()
+int main(int argc, char **argv)
 {
 
     cout << "Initializing Client..." << endl;
@@ -54,7 +54,7 @@ int main()
 
     cout << "Connected to host at: " << "127.0.0.1:" << DESTPORT << endl;
 
-    string handshake_text = "rtestfile";
+    string handshake_text = argv[1];
 
     char buffer[handshake_text.length()];
 
@@ -79,11 +79,6 @@ int main()
     if (bytes_recv > 0)
     {
         cout << "Message Received from Server (" << bytes_recv << " Bytes) : " << recv_buffer << endl;
-    }
-
-    while (1)
-    {
-        bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
     }
 
     WSACleanup();
