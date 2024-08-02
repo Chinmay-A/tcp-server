@@ -13,24 +13,15 @@
 
 using namespace std;
 
-int main()
+void generate_unit_load()
 {
-
-    cout << "Initializing Client..." << endl;
-
-    if (!initialize())
-    {
-        cout << "Could not initialize winsock, startup failed" << endl;
-        return 1;
-    }
-
     SOCKET client = socket(AF_INET, SOCK_STREAM, 0);
 
     if (client == INVALID_SOCKET)
     {
         cout << "Could not create socket, terminating process" << endl;
         WSACleanup();
-        return 1;
+        return;
     }
 
     sockaddr_in server_address;
@@ -41,7 +32,7 @@ int main()
         cout << "Could not cast server address to structure, terminating process" << endl;
         closesocket(client);
         WSACleanup();
-        return 1;
+        return;
     }
 
     if (connect(client, reinterpret_cast<sockaddr *>(&server_address), sizeof(server_address)) == SOCKET_ERROR)
@@ -49,12 +40,12 @@ int main()
         cout << "Could not connect to server" << endl;
         closesocket(client);
         WSACleanup();
-        return 1;
+        return;
     }
 
     cout << "Connected to host at: " << "127.0.0.1:" << DESTPORT << endl;
 
-    string handshake_text = "q1xf0e";
+    string handshake_text = "f22x";
 
     char buffer[handshake_text.length()];
 
@@ -67,25 +58,37 @@ int main()
         cout << "Failed to send handshake, terminating......" << endl;
         closesocket(client);
         WSACleanup();
+        return;
+    }
+
+    char recv_buffer[31];
+
+    int bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
+
+    if (bytes_recv > 0)
+    {
+        cout << "Message Received from Server (" << bytes_recv << " Bytes) : " << recv_buffer << endl;
+    }
+}
+
+int main()
+{
+
+    cout << "Initializing Client..." << endl;
+
+    if (!initialize())
+    {
+        cout << "Could not initialize winsock, startup failed" << endl;
         return 1;
     }
 
-    cout << "Bytes Sent: " << bytes_sent << endl;
+    cout << "Enter the number of calls you wish to make: ";
+    int n;
+    cin >> n;
 
-    // char recv_buffer[31];
+    for (int i = 0; i < n; i++)
+        generate_unit_load();
 
-    // int bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
-
-    // if (bytes_recv > 0)
-    // {
-    //     cout << "Message Received from Server (" << bytes_recv << " Bytes) : " << recv_buffer << endl;
-    // }
-
-    // while (1)
-    // {
-    //     bytes_recv = recv(client, recv_buffer, sizeof(recv_buffer), 0);
-    // }
-
-    WSACleanup();
+    //WSACleanup();
     return 0;
 }

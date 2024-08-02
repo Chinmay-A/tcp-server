@@ -7,36 +7,15 @@
 #include <ws2tcpip.h>
 #include <tchar.h>
 
-#include <pthread.h>
+#include <thread>
+
+#include "helper.cpp"
+#include "filehandler.cpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 
 using namespace std;
 
-bool initialize()
-{
-    WSADATA data;
-    int init_check = WSAStartup(MAKEWORD(2, 2), &data);
-
-    return (init_check == 0);
-}
-
-string get_code(int a, int b)
-{
-    string secret_code = "XG452552" + to_string(a + b) + "00065" + to_string(abs(a - b)) + "f0xE";
-    return secret_code;
-}
-
-void fill_buffer(string s, char *curr_buff)
-{
-    int n = s.length();
-
-    for (int i = 0; i < n; i++)
-    {
-        curr_buff[i] = s[i];
-    }
-    return;
-}
 void send_code(SOCKET &client, char a, char b)
 {
 
@@ -50,14 +29,6 @@ void send_code(SOCKET &client, char a, char b)
     cout << "Sent code: " << code << " (" << bytes_sent << " Bytes)" << endl;
 }
 
-bool setup_address(sockaddr_in &curr_addr, int port)
-{
-    curr_addr.sin_family = AF_INET;
-    curr_addr.sin_port = htons(port);
-    int check = inet_pton(AF_INET, "127.0.0.1", &curr_addr.sin_addr);
-    return (check == 1);
-}
-
 void send_ok_handshake(SOCKET &client)
 {
 
@@ -66,45 +37,131 @@ void send_ok_handshake(SOCKET &client)
     cout << "Sent decoy message to client: " << bytes_sent << " Bytes" << endl;
     return;
 }
-void handle_client(SOCKET client, int i)
+
+void handle_with_identifier(SOCKET client, string message, map<string, int> m)
 {
-    cout << "New connection established, active connections: " << i << endl;
-    while (1)
+    int n = message.length();
+    string identifier = message.substr(1, n - 1);
+
+    if (n - 1 != 3)
     {
-        char buffer[1024];
-
-        int bytes_recvd = recv(client, buffer, sizeof(buffer), 0);
-
-        if (bytes_recvd < 0)
-        {
-            cout << "Invalid Message, closing connection" << endl;
-
-            int check_shutdown = shutdown(client, SD_SEND);
-
-            if (check_shutdown == SOCKET_ERROR)
-            {
-                cout << "Failed to terminate connection, terminating server process..." << endl;
-                // auto it = find(clients.begin(), clients.end(), client);
-                // if (it != clients.end())
-                //     clients.erase(it);
-                // return;
-            }
-
-            return;
-        }
-        else if(bytes_recvd==0) continue;
-
-        cout << "Recieved " << bytes_recvd << " Bytes" << endl;
-        cout << "Message Received: " << buffer << endl;
-
-        if (buffer[3] == 'x' && buffer[0] == 'f')
-            send_code(client, buffer[1], buffer[2]);
-        else if (buffer[0] == 'c' && buffer[1] == 'q' && buffer[2] == 'q' && buffer[3] == 'q')
-            break;
-        else
-            send_ok_handshake(client);
+        return;
     }
 
+    if (m[identifier] >= 10)
+    {
+        cout << "Resource Limit Reached for user with identifier: " << identifier << endl;
+        return;
+    }
+    m[identifier]++;
+    identifier = identifier + to_string(m[identifier]);
+
+    char send_buff[identifier.length()];
+
+    fill_buffer(identifier, send_buff);
+
+    int bytes_sent = send(client, send_buff, sizeof(send_buff), 0);
+
+    if (bytes_sent <= 0)
+    {
+        cout << "Identifier could not be sent, client should retry" << endl;
+        return;
+    }
+
+    cout << "Sent Identifier: " << identifier << " (" << identifier.length() << ")" << endl;
+    return;
+}
+
+void send_error(SOCKET client)
+{
+
+    string error_msg_str = "Invalid Request, please generate identifier before hand";
+    char error_msg[error_msg_str.length()];
+    fill_buffer(error_msg_str, error_msg);
+    send(client, error_msg, sizeof(error_msg), 0);
+    return;
+}
+
+void add_resource(SOCKET client, string message, map<string, int> m)
+{
+    int n = message.length();
+
+    string identifier = message.substr(1, 3);
+    string file_name = message.substr(1, 4);
+
+    if (m.find(identifier) == m.end())
+    {
+        send_error(client);
+        return;
+    }
+
+    string resource_contents = message.substr(4, n - 5);
+
+    string new_file = write_to_txt(resource_contents, file_name);
+
+    string confirm_str = "OK";
+    char confirm[confirm_str.length()];
+    fill_buffer(confirm_str, confirm);
+    int bytes_sent = send(client, confirm, sizeof(confirm), 0);
+
+    return;
+}
+
+void handle_handshake(SOCKET client)
+{
+    string send_handshake_str = "Hello, from the remote file repository, the server is active";
+    char send_handshake[send_handshake_str.length()];
+    fill_buffer(send_handshake_str, send_handshake);
+    send(client, send_handshake, sizeof(send_handshake), 0);
+    return;
+}
+
+void handle_client(SOCKET client, int &i, queue<string> &q, map<string, int> &m, int &active)
+{
+    cout << "New connection established, active connections: " << i << endl;
+
+    char recbuff[1024];
+
+    int bytes_recvd = recv(client, recbuff, sizeof(recbuff), 0);
+
+    if (bytes_recvd <= 0)
+    {
+        i--;
+        cout << "Invalid Request, active connections: " << i << endl;
+        return;
+    }
+
+    string message_recvd(recbuff, bytes_recvd);
+
+    if (message_recvd[0] == 'i')
+    {
+        handle_with_identifier(client, message_recvd, m);
+    }
+    else if (message_recvd[0] == 'm')
+    {
+        add_resource(client, message_recvd, m);
+    }
+    else if (message_recvd[0] == 'q')
+    {
+
+        // signal for server to quit: q1xf0e
+        if (bytes_recvd = 6 && message_recvd[1] == '1' && message_recvd[2] == 'x' && message_recvd[3] == 'f' && message_recvd[4] == '0' && message_recvd[5] == 'e')
+        {
+            active = 0;
+            return;
+        }
+        else
+        {
+            handle_handshake(client);
+        }
+    }
+    else
+    {
+        handle_handshake(client);
+    }
+
+    closesocket(client);
+    i--;
     return;
 }
 
@@ -157,14 +214,26 @@ int main()
 
     cout << "Server Listnening on port: " << PORT << endl;
 
-    // vector<SOCKET> connections;
-
     int conns = 0;
+
+    queue<string> q;
+    map<string, int> m;
+
+    int active = 1;
 
     while (1)
     {
+        if (!active)
+        {
+            break;
+        }
+
         SOCKET client_socket = accept(server_listen, nullptr, nullptr);
         conns++;
+        if (!active)
+        {
+            break;
+        }
 
         if (client_socket == SOCKET_ERROR)
         {
@@ -173,11 +242,16 @@ int main()
         }
 
         // connections.push_back(client_socket);
+        if (!active)
+        {
+            break;
+        }
 
-        thread new_client(handle_client, client_socket, conns);
-        new_client.join();
-        conns--;
+        thread new_client(handle_client, client_socket, ref(conns), ref(q), ref(m), ref(active));
+        new_client.detach();
     }
+
+    cout << "Closing Server: " << endl;
     WSACleanup();
     return 0;
 }
