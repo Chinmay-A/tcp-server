@@ -8,6 +8,7 @@
 #include <tchar.h>
 
 #include "helper.cpp"
+#include "filehandler.cpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -55,6 +56,12 @@ int main(int argc, char **argv)
     cout << "Connected to host at: " << "127.0.0.1:" << DESTPORT << endl;
 
     string handshake_text = argv[1];
+
+    if(handshake_text[0]=='m' && handshake_text.length()>4){
+        string file_name=handshake_text.substr(4);
+        string contents=get_from_txt(file_name);
+        handshake_text+=contents;
+    }
 
     char buffer[handshake_text.length()];
 

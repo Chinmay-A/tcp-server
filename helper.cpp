@@ -22,7 +22,7 @@ bool setup_address(sockaddr_in &curr_addr, int port)
 {
     curr_addr.sin_family = AF_INET;
     curr_addr.sin_port = htons(port);
-    int check = inet_pton(AF_INET, "127.0.0.1", &curr_addr.sin_addr);
+    int check = inet_pton(AF_INET, "172.23.66.214", &curr_addr.sin_addr);
     return (check == 1);
 }
 
